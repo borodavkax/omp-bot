@@ -2,15 +2,16 @@ package transaction
 
 import (
 	"errors"
+	"github.com/ozonmp/omp-bot/internal/model/bank/transaction"
 	"log"
 	"sync"
 )
 
 type Service interface {
-	Describe(transactionID uint64) (*Transaction, error)
-	List(cursor uint64, limit uint64) ([]Transaction, error)
-	Create(Transaction) (uint64, error)
-	Update(transactionID uint64, transaction Transaction) error
+	Describe(transactionID uint64) (*transaction.Transaction, error)
+	List(cursor uint64, limit uint64) ([]transaction.Transaction, error)
+	Create(transaction.Transaction) (uint64, error)
+	Update(transactionID uint64, transaction transaction.Transaction) error
 	Remove(transactionID uint64) (bool, error)
 }
 
@@ -23,14 +24,14 @@ var (
 type DummyService struct {
 	mtx      sync.RWMutex
 	newID    uint64
-	entities []Transaction
+	entities []transaction.Transaction
 }
 
 func NewDummyTransactionService() *DummyService {
-	return &DummyService{newID: 0, entities: allTransactions}
+	return &DummyService{newID: 0, entities: transaction.AllTransactions}
 }
 
-func (s *DummyService) Describe(transactionID uint64) (*Transaction, error) {
+func (s *DummyService) Describe(transactionID uint64) (*transaction.Transaction, error) {
 	for i := 0; i < len(s.entities); i++ {
 		if transactionID == s.entities[i].ID {
 			return &s.entities[i], nil
@@ -40,7 +41,7 @@ func (s *DummyService) Describe(transactionID uint64) (*Transaction, error) {
 	return nil, ErrNotExists
 }
 
-func (s *DummyService) List(cursor uint64, limit uint64) ([]Transaction, error) {
+func (s *DummyService) List(cursor uint64, limit uint64) ([]transaction.Transaction, error) {
 	if limit == 0 {
 		return s.entities, nil
 	}
@@ -55,24 +56,25 @@ func (s *DummyService) List(cursor uint64, limit uint64) ([]Transaction, error) 
 	return s.entities[cursor : limit+cursor], nil
 }
 
-func (s *DummyService) Update(transactionID uint64, transaction Transaction) error {
+func (s *DummyService) Update(transactionID uint64, transaction transaction.Transaction) error {
 	log.Printf("transaction.DummyService.List not implemented: %v, %v", transactionID, transaction)
 	return ErrNotImplemented
 }
 
-func (s *DummyService) Create(transaction Transaction) (uint64, error) {
+func (s *DummyService) Create(tx transaction.Transaction) (uint64, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
 	newID := s.getNextID()
-	var i = Transaction{ID: newID,
-		BankAccountFrom: transaction.BankAccountFrom,
-		BankAccountTo:   transaction.BankAccountTo,
-		CreatedAt:       transaction.CreatedAt,
-		Amount:          transaction.Amount,
-		Currency:        transaction.Currency,
+	t := transaction.Transaction{
+		ID:              newID,
+		BankAccountFrom: tx.BankAccountFrom,
+		BankAccountTo:   tx.BankAccountTo,
+		CreatedAt:       tx.CreatedAt,
+		Amount:          tx.Amount,
+		Currency:        tx.Currency,
 	}
-	s.entities = append(s.entities, i)
+	s.entities = append(s.entities, t)
 	return newID, nil
 }
 

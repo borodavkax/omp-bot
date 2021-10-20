@@ -1,18 +1,20 @@
 package transaction
 
 import (
+	"github.com/ozonmp/omp-bot/internal/model/bank/transaction"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-var mockTransactions = []Transaction{
-	{ID: 1, BankAccountFrom: "A", BankAccountTo: "B", Amount: 1.0, CreatedAt: time.Now(), Currency: 1},
-	{ID: 2, BankAccountFrom: "B", BankAccountTo: "A", Amount: 2.0, CreatedAt: time.Now().AddDate(0, 0, -1), Currency: 1},
-	{ID: 3, BankAccountFrom: "A", BankAccountTo: "C", Amount: 3.0, CreatedAt: time.Now().AddDate(0, 0, -2), Currency: 1},
+var mockTransactions = []transaction.Transaction{
+	{ID: 1, BankAccountFrom: 123, BankAccountTo: 777, Amount: 1.0, CreatedAt: time.Now(), Currency: transaction.RUB},
+	{ID: 2, BankAccountFrom: 777, BankAccountTo: 123, Amount: 2.0, CreatedAt: time.Now().AddDate(0, 0, -1), Currency: transaction.RUB},
+	{ID: 3, BankAccountFrom: 123, BankAccountTo: 666, Amount: 3.0, CreatedAt: time.Now().AddDate(0, 0, -2), Currency: transaction.RUB},
 }
 
 func upFixtures() {
-	allTransactions = mockTransactions
+	transaction.AllTransactions = mockTransactions
 }
 
 func TestDummyService_List(t *testing.T) {
@@ -20,23 +22,14 @@ func TestDummyService_List(t *testing.T) {
 
 	s := NewDummyTransactionService()
 	tx, err := s.List(0, 3)
-	if err != nil {
-		t.Fatalf("excepted no err")
-	}
-	if len(tx) != 3 {
-		t.Fatalf("expected 3 txs, got %v", len(tx))
-	}
+	require.Empty(t, err, "excepted no err")
+	require.Equal(t, 3, len(tx), "wrong number of txs")
 
 	_, err = s.List(10000, 1)
-	if err == nil {
-		t.Fatalf("expected out of bound")
-	}
+	require.ErrorIs(t, err, ErrOutOfBoundError)
 
 	tx, _ = s.List(1, 1)
-
-	if tx[0] != mockTransactions[1] {
-		t.Fatalf("got wrong tx")
-	}
+	require.Equal(t, mockTransactions[1], tx[0], "got wrong tx")
 }
 
 func TestDummyService_Remove(t *testing.T) {
@@ -44,19 +37,13 @@ func TestDummyService_Remove(t *testing.T) {
 
 	s := NewDummyTransactionService()
 	result, _ := s.Remove(1)
-	if !result {
-		t.Fatalf("excepted success")
-	}
+	require.Equal(t, true, result, "excepted success")
 
 	tx, _ := s.List(0, 3)
-	if len(tx) != 2 {
-		t.Fatalf("expected 2 txs, got %v", len(tx))
-	}
+	require.Equal(t, 2, len(tx), "wrong number of txs")
 
 	result, _ = s.Remove(111)
-	if result {
-		t.Fatalf("excepted error")
-	}
+	require.Equal(t, false, result, "excepted error")
 }
 
 func TestDummyService_Describe(t *testing.T) {
@@ -64,12 +51,8 @@ func TestDummyService_Describe(t *testing.T) {
 
 	s := NewDummyTransactionService()
 	tx, _ := s.Describe(3)
-	if tx.ID != 3 {
-		t.Fatalf("expected tx with ID 3, got %v", tx.ID)
-	}
+	require.Equal(t, uint64(3), tx.ID)
 
 	_, err := s.Describe(333)
-	if err == nil {
-		t.Fatalf("excepted not exists error")
-	}
+	require.ErrorIs(t, err, ErrNotExists)
 }
