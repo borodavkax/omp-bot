@@ -7,4 +7,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 )
 
-require github.com/technoweenie/multipartstreamer v1.0.1 // indirect
+require (
+	github.com/stretchr/testify v1.7.0
+	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
+)
